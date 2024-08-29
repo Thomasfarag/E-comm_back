@@ -1,38 +1,35 @@
 import express from 'express';
-import * as categoryController from './categories.controller.js'
+import * as categoryController from './categories.controller.js';
 import subCategoryRouter from '../subcategories/subCategories.routes.js';
 import { validation } from '../../utils/middleware/validation.js';
 import { createCategorySchema, getCategoryByIdSchema } from './categories.validator.js';
-const categoryRouter = express.Router();
 import { uploadSingleFile } from '../../utils/middleware/fileUploads.js';
 
-categoryRouter.use('/:id/subCategory', subCategoryRouter)
+const categoryRouter = express.Router();
 
+// Use the subCategoryRouter for subcategories under a specific category
+categoryRouter.use('/:id/subCategory', subCategoryRouter);
 
+// Route to handle GET and POST requests for categories
+// POST request will handle file upload and category creation
+categoryRouter.route("/")
+  .get(categoryController.getAllCategories) // Get all categories
+  .post(
+    uploadSingleFile('category', 'image'), // Middleware to handle file upload
+    validation(createCategorySchema), // Middleware to validate request body
+    categoryController.createCategory // Controller to create a new category
+  );
 
+// Route to handle GET, PUT, and DELETE requests for a specific category by ID
+categoryRouter.route("/:id")
+  .get(validation(getCategoryByIdSchema), categoryController.getCategoryById) // Get a specific category by ID
+  .put(
+    uploadSingleFile('category', 'image'), // Middleware to handle file upload (if updating image)
+    categoryController.updateCategory // Controller to update a specific category
+  )
+  .delete(categoryController.deleteCategory); // Controller to delete a specific category
 
-
-categoryRouter.route("/").get(categoryController.getAllCategories)
-  .post(uploadSingleFile('category', 'image'), validation(createCategorySchema), categoryController.createCategory);
-
-
-categoryRouter
-  .route("/:id")
-  .get(validation(getCategoryByIdSchema), categoryController.getCategoryById)
-  .put(categoryController.updateCategory)
-  .delete(categoryController.deleteCategory)
-
-
-categoryRouter
- .get('/categories/:slug/products', categoryController.getAllProductsByCategory);
-
-
-
-
-
-
-
-
-
+// Route to get all products by category slug
+categoryRouter.get('/categories/:slug/products', categoryController.getAllProductsByCategory);
 
 export default categoryRouter;
